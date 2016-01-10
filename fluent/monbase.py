@@ -13,6 +13,7 @@ Email (winstroth@tfd.uni-hannover.de)
 
 
 import os
+import pickle
 import subprocess
 
 
@@ -53,6 +54,20 @@ def get_last_mod_time(fnames):
         mtimes[fname] = last_mod_time.st_mtime
     return mtimes
 
+def check_undefined_finish(fout):
+    """Returns True if Fluent simulation has undefined (not converged nor 
+       diverged) and False otherwise."""
+    # Load modification times from last check if they exist
+    pfile_mtimes = 'saved_mtimes.p'
+    if os.path.isfile(pfile_mtimes):
+        with open(pfile_mtimes, 'rb') as f:
+            saved_mtimes = pickle.load(f)
+    else:
+        cur_mtimes = get_last_mod_time(fnames_fout)
+        with open(pfile_mtimes, 'wb') as f:
+            pickle.dump(cur_mtimes, f)
+        return F
+
 
 base_dir = '/home/fred/src/python/fluent'
 os.chdir(base_dir)
@@ -76,11 +91,15 @@ for job in jobs:
 
 # Check which simulations have converged, diverged or are undefined
 fnames_fout = get_filenames_by_ext(fnames_base_dir, '.out')
-
-cur_mtimes = get_last_mod_time(fnames_fout)
-
+# Start with convergence and divergence checks
 for fname in fnames_fout:
     if check_convergence(fname):
         print('{} has converged!'.format(fname))
     if check_divergence(fname):
         print('{} has diverged!'.format(fname))
+
+
+
+
+
+
