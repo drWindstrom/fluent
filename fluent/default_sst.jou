@@ -1,0 +1,76 @@
+; Input simulation parameters
+(define aoa AOA)
+(define mach 0.157)
+(define temperatur 288.15)
+(define cl_tol 0.0001)
+(define cd_tol 0.0001)
+(define conv_last_iters 25)
+/file/read-case "r19600_norm"
+
+; Define constants
+(define pi 3.14159265359)
+
+; Get xComponent and yComponent based on angle of attack
+(define xComp (cos (* aoa (/ pi 180.0) ) ) )
+(define yComp (sin (* aoa (/ pi 180.0) ) ) )
+
+;Start of journal
+/mesh/reorder/reorder-domain
+/define/materials/change-create air air yes ideal-gas no no no no no no
+/define/models/energy? yes yes no
+
+; For kw-sst model uncomment below
+/define/models/viscous/kw-sst? yes
+/define/boundary-conditions/pressure-far-field inlet no 0. no (+ mach) no (+ temperatur) no (+ xComp) no (+ yComp) no no yes 0.1 10
+/define/boundary-conditions/pressure-outlet outlet no 0. no (+ temperatur) no yes no no yes 0.1 10 no no
+/solve/monitors/residual/check-convergence? no no no no no no
+
+; Operating conditions and reference values
+/define/operating-conditions/operating-pressure 101325.
+/report/reference-values/compute/pressure-far-field inlet
+/report/reference-values/area 1.
+/report/reference-values/length 1.
+
+; Setup of solution methods
+/solve/set/p-v-coupling 24
+/solve/set/gradient-scheme no yes
+/solve/set/discretization-scheme/pressure 12
+/solve/set/discretization-scheme/density 1
+/solve/set/discretization-scheme/mom 1
+/solve/set/discretization-scheme/k 1
+/solve/set/discretization-scheme/omega 1
+/solve/set/discretization-scheme/temperature 1
+
+; Setup solution controls
+/solve/set/p-v-controls 50. 0.3 0.3
+/solve/set/under-relaxation/density 0.5
+/solve/set/under-relaxation/body-force 1.0
+/solve/set/under-relaxation/k 0.5
+/solve/set/under-relaxation/omega 0.5
+/solve/set/under-relaxation/turb-viscosity 1.0
+/solve/set/under-relaxation/temperature 1.0
+
+; Uncomment to enable blending factor for higher order therms
+;/solve/set/numerics no yes no no no 1.
+
+; Define monitors
+/solve/monitors/force/set-lift-monitor cl-1 yes airfoil () yes yes "out.cl" yes 2 no (- yComp) (+ xComp)
+/solve/monitors/force/set-drag-monitor cd-1 yes airfoil () yes yes "out.cd" yes 3 no (+ xComp) (+ yComp)
+/solve/monitors/force/set-moment-monitor cm-1 yes airfoil () yes yes "out.cm" yes 4 no 0.25 0 0 0 1
+
+; Convergence monitors
+/solve/monitors/convergence/add-edit cd-1 (+ cl_tol) 500 (+ conv_last_iters) yes no
+/solve/monitors/convergence/add-edit cl-1 (+ cd_tol) 500 (+ conv_last_iters) yes no
+
+; Initialize solution
+/solve/initialize/compute-defaults/pressure-far-field inlet
+/solve/initialize/list-defaults
+;/solve/initialize/initialize-flow
+/solve/initialize/fmg-initialization yes
+
+; Start iterating
+/solve/set/number-of-iterations 10000
+/solve/iterate 10000
+
+; Save results
+/file/write-case-data "out_res.cas"
