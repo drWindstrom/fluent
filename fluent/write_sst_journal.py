@@ -77,7 +77,7 @@ for aoa in aoas:
     job_txt = job_txt.replace('SIMNAME', sim_name)
     job_txt = job_txt.replace('in.jou', sim_name + '.jou')
     job_txt = job_txt.replace('fluent.out', sim_name + '.out')
-    job_out = sim_name + '.sh'
+    job_out = sim_name + '.qsh'
     job_out_path = os.path.join(out_path, job_out)
     with open(job_out_path, 'w') as f:
         f.write(job_txt)
