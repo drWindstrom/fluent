@@ -1,11 +1,11 @@
 ; Input simulation parameters
 (define aoa AOA)
-(define mach 0.157)
+(define mach MACH)
 (define temperatur 288.15)
 (define cl_tol 0.0001)
 (define cd_tol 0.0001)
 (define conv_last_iters 25)
-/file/read-case "r19600_norm"
+/file/read-case "CASE_FILE"
 
 ; Define constants
 (define pi 3.14159265359)
@@ -54,9 +54,9 @@
 ;/solve/set/numerics no yes no no no 1.
 
 ; Define monitors
-/solve/monitors/force/set-lift-monitor cl-1 yes airfoil () yes yes "out.cl" yes 2 no (- yComp) (+ xComp)
-/solve/monitors/force/set-drag-monitor cd-1 yes airfoil () yes yes "out.cd" yes 3 no (+ xComp) (+ yComp)
-/solve/monitors/force/set-moment-monitor cm-1 yes airfoil () yes yes "out.cm" yes 4 no 0.25 0 0 0 1
+/solve/monitors/force/set-lift-monitor cl-1 yes airfoil () yes yes "OUT.CL" yes 2 no (- yComp) (+ xComp)
+/solve/monitors/force/set-drag-monitor cd-1 yes airfoil () yes yes "OUT.CD" yes 3 no (+ xComp) (+ yComp)
+/solve/monitors/force/set-moment-monitor cm-1 yes airfoil () yes yes "OUT.CM" yes 4 no 0.25 0 0 0 1
 
 ; Convergence monitors
 /solve/monitors/convergence/add-edit cd-1 (+ cl_tol) 500 (+ conv_last_iters) yes no
@@ -65,12 +65,12 @@
 ; Initialize solution
 /solve/initialize/compute-defaults/pressure-far-field inlet
 /solve/initialize/list-defaults
-;/solve/initialize/initialize-flow
+/solve/initialize/initialize-flow
 /solve/initialize/fmg-initialization yes
 
 ; Start iterating
-/solve/set/number-of-iterations 10000
-/solve/iterate 10000
+/solve/set/number-of-iterations 5000
+/solve/iterate 5000
 
 ; Save results
-/file/write-case-data "out_res.cas"
+/file/write-case-data "OUT_RESULTS"
