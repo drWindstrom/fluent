@@ -8,21 +8,21 @@ import os
 #nairfoil = 'r07100'; mach = 0.168
 #nairfoil = 'r08400'; mach = 0.184
 #nairfoil = 'r09900'; mach = 0.197
-nairfoil = 'r11200'; mach = 0.204
+#nairfoil = 'r11200'; mach = 0.204
 #nairfoil = 'r12700'; mach = 0.206
 #nairfoil = 'r14100'; mach = 0.204
 #nairfoil = 'r15600'; mach = 0.198
 #nairfoil = 'r16900'; mach = 0.189
-#nairfoil = 'r18500'; mach = 0.172
+nairfoil = 'r18500'; mach = 0.172
 #nairfoil = 'r19600'; mach = 0.157
 #nairfoil = 'r20500'; mach = 0.142
 #nairfoil = 'r21500'; mach = 0.112
 #nairfoil = 'r22000'; mach = 0.082
 
 # Angles of attack for airfoil simulation
-aoas = [-4.0, -2.0, 0.0, 2.0, 4.0, 6.0, 7.0, 8.0,
-        9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0]
-# aoas = [10.0, 11.0, 12.0, 13.0, 14.0, 15.0]
+# aoas = [-4.0, -2.0, 0.0, 2.0, 4.0, 6.0, 7.0, 8.0,
+        # 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0]
+aoas = [4.0, 6.0, 12.0, 13.0]
 template_journal = 'default_sst.jou'
 ntype = 'st'
 nsetup = 'sst'
