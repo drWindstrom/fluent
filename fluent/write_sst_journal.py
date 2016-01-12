@@ -1,4 +1,5 @@
 import os
+import fluutils as futils
 
 
 # nairfoil = 'e44r02000'; mach = 0.0387; chord = 2.453037
@@ -14,43 +15,25 @@ import os
 # nairfoil = 'e44r15600'; mach = 0.1687; chord = 1.175150
 # nairfoil = 'e44r16900'; mach = 0.1823; chord = 1.035377
 # nairfoil = 'e44r18500'; mach = 0.1990; chord = 0.866005
-# nairfoil = 'e44r19600'; mach = 0.2106; chord = 0.746913
+nairfoil = 'e44r19600'; mach = 0.2106; chord = 0.746913
 # nairfoil = 'e44r20500'; mach = 0.2200; chord = 0.647561
 # nairfoil = 'e44r21500'; mach = 0.2305; chord = 0.485032
-nairfoil = 'e44r22000'; mach = 0.2358; chord = 0.349029
+# nairfoil = 'e44r22000'; mach = 0.2358; chord = 0.349029
 
 # Angles of attack for airfoil simulation
 aoas = [-4.0, -2.0, 0.0, 2.0, 4.0, 6.0, 7.0, 8.0, 9.0, 10.0]
 # aoas = [4.0, 6.0]
 template_journal = 'default_sst.jou'
-nsetup = 'sstTemp'
+nsetup = 'sst'
 ntype = 'st'
-
-out_path = './output'
-
-
-def create_sim_name(nairfoil, ntype, nsetup, aoa, optional=None):
-    """ Returns the full name of the simulation. """
-    # Take care of optional string
-    if optional is None:
-        optional = ''
-    else:
-        optional = '_{}'.format(optional)
-    # Construct sim_name
-    if aoa < 0:
-        sim_name = '{}_{}_{}_m{:0=5.2f}{}'.format(nairfoil, nsetup, ntype,
-                                                  abs(aoa), optional)
-    else:
-        sim_name = '{}_{}_{}_p{:0=5.2f}{}'.format(nairfoil, nsetup, ntype,
-                                                  abs(aoa), optional)
-    return sim_name
+out_path = 'output'
 
 # Get output path
 out_path = os.path.join(out_path, nairfoil)
-
+# Create fluent journal and shell script for pbs queue
 job_sh_names = []
 for aoa in aoas:
-    sim_name = create_sim_name(nairfoil, ntype, nsetup, aoa)
+    sim_name = futils.create_sim_name(nairfoil, ntype, nsetup, aoa)
 
     # Create fluent journal file
     with open(template_journal, 'r') as f:

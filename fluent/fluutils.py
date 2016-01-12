@@ -153,3 +153,20 @@ def split_fname(fname):
         splits['optional'] = fname_split[4]
     aoa = float(fname_split[3][1:6])
     return splits, aoa
+
+
+def create_sim_name(nairfoil, ntype, nsetup, aoa, optional=None):
+    """ Returns the full name of the simulation. """
+    # Take care of optional string
+    if optional is None:
+        optional = ''
+    else:
+        optional = '_{}'.format(optional)
+    # Construct sim_name
+    if aoa < 0:
+        sim_name = '{}_{}_{}_m{:0=5.2f}{}'.format(nairfoil, nsetup, ntype,
+                                                  abs(aoa), optional)
+    else:
+        sim_name = '{}_{}_{}_p{:0=5.2f}{}'.format(nairfoil, nsetup, ntype,
+                                                  abs(aoa), optional)
+    return sim_name
