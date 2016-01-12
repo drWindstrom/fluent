@@ -5,7 +5,7 @@
 (define cl_tol 0.0001)
 (define cd_tol 0.0001)
 (define conv_last_iters 25)
-/file/read-case "CASE_FILE"
+/file/read-case "grids/CASE_FILE"
 
 ; Define constants
 (define pi 3.14159265359)
@@ -67,6 +67,9 @@
 /solve/initialize/list-defaults
 /solve/initialize/initialize-flow
 /solve/initialize/fmg-initialization yes
+
+; Set batch options
+/file/set-batch-options no yes yes
 
 ; Start iterating
 /solve/set/number-of-iterations 5000

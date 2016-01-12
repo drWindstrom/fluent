@@ -1,28 +1,29 @@
 import os
 
 
-#nairfoil = 'r02000'; mach = 0.095
-#nairfoil = 'r02800'; mach = 0.105
-#nairfoil = 'r04200'; mach = 0.127
-#nairfoil = 'r05500'; mach = 0.147
-#nairfoil = 'r07100'; mach = 0.168
-#nairfoil = 'r08400'; mach = 0.184
-#nairfoil = 'r09900'; mach = 0.197
-#nairfoil = 'r11200'; mach = 0.204
-#nairfoil = 'r12700'; mach = 0.206
-#nairfoil = 'r14100'; mach = 0.204
-#nairfoil = 'r15600'; mach = 0.198
-#nairfoil = 'r16900'; mach = 0.189
-nairfoil = 'r18500'; mach = 0.172
-#nairfoil = 'r19600'; mach = 0.157
-#nairfoil = 'r20500'; mach = 0.142
-#nairfoil = 'r21500'; mach = 0.112
-#nairfoil = 'r22000'; mach = 0.082
+# nairfoil = 'r02000'; mach = 0.095
+# nairfoil = 'r02800'; mach = 0.105
+# nairfoil = 'r04200'; mach = 0.127
+# nairfoil = 'r05500'; mach = 0.147
+# nairfoil = 'r07100'; mach = 0.168
+# nairfoil = 'r08400'; mach = 0.184
+# nairfoil = 'r09900'; mach = 0.197
+# nairfoil = 'r11200'; mach = 0.204
+# nairfoil = 'r12700'; mach = 0.206
+# nairfoil = 'r14100'; mach = 0.204
+# nairfoil = 'r15600'; mach = 0.198
+# nairfoil = 'r16900'; mach = 0.189
+# nairfoil = 'r18500'; mach = 0.172
+# nairfoil = 'r19600'; mach = 0.157
+nairfoil = 'r20500'; mach = 0.142
+# nairfoil = 'r21500'; mach = 0.112
+# nairfoil = 'r22000'; mach = 0.082
+# nairfoil = 't185'; mach = 0.172
 
 # Angles of attack for airfoil simulation
-# aoas = [-4.0, -2.0, 0.0, 2.0, 4.0, 6.0, 7.0, 8.0,
-        # 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0]
-aoas = [4.0, 6.0, 12.0, 13.0]
+aoas = [-4.0, -2.0, 0.0, 2.0, 4.0, 6.0, 7.0, 8.0,
+        9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0]
+# aoas = [4.0, 6.0]
 template_journal = 'default_sst.jou'
 ntype = 'st'
 nsetup = 'sst'
@@ -49,8 +50,6 @@ def create_sim_name(nairfoil, ntype, nsetup, aoa, optional=None):
 out_path = os.path.join(out_path, nairfoil)
 
 job_sh_names = []
-sim_name = create_sim_name(nairfoil, ntype, nsetup, 0.0)
-case_fname = sim_name.replace('_p00.00', '')
 for aoa in aoas:
     sim_name = create_sim_name(nairfoil, ntype, nsetup, aoa)
 
@@ -59,7 +58,7 @@ for aoa in aoas:
         journal_txt = f.read()
     journal_txt = journal_txt.replace('AOA', str(aoa))
     journal_txt = journal_txt.replace('MACH', str(mach))
-    journal_txt = journal_txt.replace('CASE_FILE', '{}.cas'.format(case_fname))
+    journal_txt = journal_txt.replace('CASE_FILE', '{}.cas'.format(nairfoil))
     journal_txt = journal_txt.replace('OUT.CL', '{}.cl'.format(sim_name))
     journal_txt = journal_txt.replace('OUT.CD', '{}.cd'.format(sim_name))
     journal_txt = journal_txt.replace('OUT.CM', '{}.cm'.format(sim_name))
