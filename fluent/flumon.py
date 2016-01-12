@@ -18,15 +18,16 @@ import fluutils as futils
 
 
 # Variable declaration
-mon_dir = '/home/winstroth/src/python/fluent/test_files'
+# mon_dir = '/home/winstroth/src/python/fluent/test_files'
+mon_dir = '/bigwork/nhkcjwin/CFD/fluent/monitored_dir'
 conv_dir = 'finished/converged'
 div_dir = 'finished/diverged'
 undef_dir = 'finished/undefined'
 qsh_dir = 'qsh_backup'
 pbs_dir = 'pbs_logs'
 pfile_mtimes = 'saved_mtimes.p'
-st_ext_move = ['.jou', '.cl', '.cd', '.cm', '.out', '.cas.gz', '.dat.gz']
-
+st_ext_move = ['.jou', '.cl', '.cd', '.cm', '.out', '.cas.gz', '.dat.gz',
+               '.plt']
 
 # Start of script
 cwd = os.getcwd()
