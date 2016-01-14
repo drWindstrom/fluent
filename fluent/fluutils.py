@@ -4,6 +4,7 @@ import numpy as np
 import os
 import pandas as pd
 import pickle
+import re
 
 
 def get_fnames_by_ext(fnames, ext):
@@ -311,3 +312,90 @@ def get_clcdcm(top_dir):
         if polar_id in cm_polars:
             polars_df[polar_id]['cm'] = cm_polars[polar_id].cm
     return polars_df
+
+
+def write_journals(airfoils, jou_template, nsetup, ntype, out_dir):
+    """Loads the template journal, updates the parameters and writes it to
+    out_dir."""
+    for nairfoil, sim_setup in airfoils.iteritems():
+        for aoa in sim_setup['aoas']:
+            # Create simulation name
+            sim_name = create_sim_name(nairfoil, ntype, nsetup, aoa)
+            # Create fluent journal file
+            with open(jou_template, 'r') as f:
+                jtxt = f.read()
+            # Start to replace parameters inside the journal
+            jtxt = jtxt.replace('AOA', str(aoa))
+            jtxt = jtxt.replace('MACH', str(sim_setup['mach']))
+            jtxt = jtxt.replace('CHORD', str(sim_setup['chord']))
+            jtxt = jtxt.replace('CASE_FILE', '{}.cas'.format(nairfoil))
+            jtxt = jtxt.replace('OUT.CL', '{}.cl'.format(sim_name))
+            jtxt = jtxt.replace('OUT.CD', '{}.cd'.format(sim_name))
+            jtxt = jtxt.replace('OUT.CM', '{}.cm'.format(sim_name))
+            jtxt = jtxt.replace('OUT_TECPLOT', '{}.plt'.format(sim_name))
+            jtxt = jtxt.replace('OUT_RESULTS', '{}.cas.gz'.format(sim_name))
+            # Write new journal to out_dir
+            jname = sim_name + '.jou'
+            if not os.path.exists(out_dir):
+                os.makedirs(out_dir)
+            with open(os.path.join(out_dir, jname), 'w') as f:
+                f.write(jtxt)
+    return True
+
+
+def write_shell_scripts(airfoils, qsh_template, nsetup, ntype, out_dir):
+    """Loads the template shell script, updates the parameters and writes it to
+    out_dir."""
+    for nairfoil, sim_setup in airfoils.iteritems():
+        for aoa in sim_setup['aoas']:
+            # Create simulation name
+            sim_name = create_sim_name(nairfoil, ntype, nsetup, aoa)
+            # Create fluent journal file
+            with open(qsh_template, 'r') as f:
+                qtxt = f.read()
+            # Start to replace parameters inside the journal
+            qtxt = qtxt.replace('SIMNAME', sim_name)
+            qtxt = qtxt.replace('in.jou', sim_name + '.jou')
+            qtxt = qtxt.replace('fluent.out', sim_name + '.out')
+            # Write new shell script to out_dir
+            qout = sim_name + '.qsh'
+            if not os.path.exists(out_dir):
+                os.makedirs(out_dir)
+            with open(os.path.join(out_dir, qout), 'w') as f:
+                f.write(qtxt)
+    return True
+
+
+def restart_scan(top_dir, ext='*.jou'):
+    """Recursively scans top_dir and subdirectories for fluent journals and
+    returns the parameters needed to restart these simulations."""
+    # Find all files
+    jou_files = find_files(top_dir, ext)
+    # Define regular expressions
+    mach_pattern = re.compile(r'\(define *mach *([\+\-]*\d*\.\d*)\)')
+    chord_pattern = re.compile(r'\(define *chord *([\+\-]*\d*\.\d*)\)')
+    airfoils = {}
+    for jou_file, fout_path in jou_files:
+        fname_parts, aoa = split_fname(jou_file)
+        nairfoil = fname_parts['nairfoil']
+        # Prepare data structure for airfoils
+        if nairfoil not in airfoils:
+            airfoils[nairfoil] = {}
+        if 'aoas' not in airfoils[nairfoil]:
+            airfoils[nairfoil]['aoas'] = []
+        # Start adding data to airfoils
+        airfoils[nairfoil]['aoas'].append(aoa)
+        with open(fout_path, 'r') as f:
+            txt = f.read()
+        # Find matches and convert to float
+        mach_matches = re.findall(mach_pattern, txt)
+        chord_matches = re.findall(chord_pattern, txt)
+        if len(mach_matches) > 1 or len(chord_matches) > 1:
+            raise IndexError('Found more than one match. This should not '
+                             'happen. Make sure each variable is only '
+                             'defined once in the journal.')
+        mach = float(mach_matches[0])
+        chord = float(chord_matches[0])
+        airfoils[nairfoil]['mach'] = mach
+        airfoils[nairfoil]['chord'] = chord
+    return airfoils

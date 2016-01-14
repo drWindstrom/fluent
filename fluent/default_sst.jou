@@ -56,9 +56,6 @@
 /solve/set/under-relaxation/turb-viscosity 1.0
 /solve/set/under-relaxation/temperature 1.0
 
-; Uncomment to enable blending factor for higher order therms
-;/solve/set/numerics no yes no no no 1.
-
 ; Define monitors
 /solve/monitors/force/set-lift-monitor cl-1 yes airfoil () yes yes "OUT.CL" yes 2 no (- yComp) (+ xComp)
 /solve/monitors/force/set-drag-monitor cd-1 yes airfoil () yes yes "OUT.CD" yes 3 no (+ xComp) (+ yComp)
@@ -78,8 +75,8 @@
 /file/set-batch-options no yes yes
 
 ; Start iterating
-/solve/set/number-of-iterations 2500
-/solve/iterate 2500
+/solve/set/number-of-iterations 3000
+/solve/iterate 3000
 
 ; Save results and export
 /file/write-case-data "OUT_RESULTS"

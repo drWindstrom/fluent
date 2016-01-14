@@ -56,5 +56,6 @@ docs/_build/
 # PyBuilder
 target/
 
-# Output directory
+# Directories
 output/
+test_files/
