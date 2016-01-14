@@ -43,23 +43,20 @@ fnames_fout = futils.get_fnames_by_ext(fnames_mon_dir, '.out')
 # Load last modification times of fluent out files,
 prev_mtimes = futils.load_pre_mtimes(pfile_mtimes, fnames_fout)
 cur_mtimes = futils.get_mtime(fnames_fout)
-undef_finisher = futils.check_undef(cur_mtimes, prev_mtimes)
+done_sims = futils.check_sim_done(cur_mtimes, prev_mtimes)
 
 # Check which simulations have converged, diverged or are undefined
-for fname in fnames_fout:
+for fname in done_sims:
     state = futils.check_convergence(fname)
     if state == 'converged':
         # print('{} has converged!'.format(fname))
         futils.move_files_checked(fname, st_ext_res, conv_dir)
-    elif state == 'diverged':
+    if state == 'diverged':
         # print('{} has diverged!'.format(fname))
         futils.move_files(fname, './', div_dir)
-    elif state == 'outOfIterations':
+    if state == 'outOfIterations':
         # print('{} has finished ran out of iterations'.format(fname))
         futils.move_files_checked(fname, st_ext_res, undef_dir)
-    elif state == 'running' and undef_finisher[fname]:
-        # print('{} has finished undefined'.format(fname))
-        futils.move_files(fname, './', undef_dir)
 
 # Get all pbs queue shell scripts
 jobs = futils.get_fnames_by_ext(fnames_mon_dir, '.qsh')

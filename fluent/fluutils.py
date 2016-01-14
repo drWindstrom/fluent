@@ -54,7 +54,7 @@ def check_convergence(fout):
     return state
 
 
-def check_undef(cur_mtimes, pre_mtimes):
+def check_sim_done(cur_mtimes, pre_mtimes):
     """Checks if the fluent simulation has finished by comparing the last
     modification times of the fluent out file of the current monitor run
     (cur_times) with the modification times of the previous monitor run. If
@@ -70,15 +70,11 @@ def check_undef(cur_mtimes, pre_mtimes):
             are the last modification times of the .out files.
 
     """
-    results = {}
+    results = []
     for fname, cur_mtime in cur_mtimes.iteritems():
         if fname in pre_mtimes:
-            if cur_mtime > pre_mtimes[fname]:
-                results[fname] = False
-            else:
-                results[fname] = True
-        else:
-            results[fname] = False
+            if not cur_mtime > pre_mtimes[fname]:
+                results.append(fname)
     return results
 
 
