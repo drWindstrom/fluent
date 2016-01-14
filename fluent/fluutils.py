@@ -16,24 +16,42 @@ def get_fnames_by_ext(fnames, ext):
     return found_fnames
 
 
+# def check_convergence(fout):
+#     """Returns True if Fluent simulation has converged and False
+#     otherwise."""
+#     with open(fout, 'r') as f:
+#         fout_txt = f.read()
+#     if 'solution is converged' in fout_txt:
+#         return True
+#     else:
+#         return False
+
+
+# def check_divergence(fout):
+#     """Returns True if Fluent simulation has diverged and False otherwise."""
+#     with open(fout, 'r') as f:
+#         fout_txt = f.read()
+#     if ('Divergence detected' in fout_txt and
+#             'Halting due to end of file on input' not in fout_txt):
+#         return True
+#     else:
+#         return False
+
 def check_convergence(fout):
-    """Returns True if Fluent simulation has converged and False otherwise."""
+    """Returns the convergence state of the fluent simulation."""
+    state = 'running'
     with open(fout, 'r') as f:
         fout_txt = f.read()
     if 'solution is converged' in fout_txt:
-        return True
-    else:
-        return False
-
-
-def check_divergence(fout):
-    """Returns True if Fluent simulation has diverged and False otherwise."""
-    with open(fout, 'r') as f:
-        fout_txt = f.read()
-    if 'Divergence detected' in fout_txt:
-        return True
-    else:
-        return False
+        state = 'converged'
+        return state
+    if ('Divergence detected' in fout_txt and
+            'Halting due to end of file on input' not in fout_txt):
+        state = 'diverged'
+        return state
+    if 'Halting due to end of file on input' in fout_txt:
+        state = 'outOfIterations'
+    return state
 
 
 def check_undef(cur_mtimes, pre_mtimes):
@@ -91,7 +109,7 @@ def load_pre_mtimes(pfile, fnames):
         return pre_mod_times
 
 
-def move_files(fname_fout, extensions, dest_dir):
+def move_files_checked(fname_fout, extensions, dest_dir):
     """Moves all files to dest_dir if they exist. This function will create
     a new folder inside dest_dir which is based on the filename of fname_out.
     The new folder will be called nairfoil_nsetup.
@@ -111,14 +129,34 @@ def move_files(fname_fout, extensions, dest_dir):
     # Extract new folder name based on fname_fout
     new_folder_name = reshape_fname(fname_fout, ['nairfoil', 'nsetup'])
     dest_dir = os.path.join(dest_dir, new_folder_name)
-    # Create directory if it does not exist
-    # if not os.path.exists(dest_dir):
-    #     os.makedirs(dest_dir)
+
     # Move files
     for ext in extensions:
         cur_file = fname + ext
         os.renames(cur_file, os.path.join(dest_dir, cur_file))
     return True
+
+
+def move_files(fname_fout, root_dir, dest_dir):
+    """Moves all files with same filename (excluding extension) as fname_out to
+    dest_dir. This function will create a new folder inside dest_dir which is
+    based on the filename of fname_out. The new folder will be called
+    nairfoil_nsetup.
+
+    """
+    fname, f_ext = os.path.splitext(fname_fout)
+    # Find files which filename of fname_fout
+    matches = []
+    pattern = fname + '*'
+    root_fnames = os.listdir(root_dir)
+    for filename in fnmatch.filter(root_fnames, pattern):
+        matches.append([filename, os.path.join(root_dir, filename)])
+    # Extract new folder name based on fname_fout
+    new_folder_name = reshape_fname(fname_fout, ['nairfoil', 'nsetup'])
+    dest_dir = os.path.join(dest_dir, new_folder_name)
+    # Move files
+    for cur_file in matches:
+        os.renames(cur_file[1], os.path.join(dest_dir, cur_file[0]))
 
 
 def reshape_fname(fname, order):

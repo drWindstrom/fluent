@@ -26,8 +26,9 @@ undef_dir = 'finished/undefined'
 qsh_dir = 'qsh_backup'
 pbs_dir = 'pbs_logs'
 pfile_mtimes = 'saved_mtimes.p'
-st_ext_move = ['.jou', '.cl', '.cd', '.cm', '.out', '.cas.gz', '.dat.gz',
-               '.plt']
+st_ext_res = ['.jou', '.cl', '.cd', '.cm', '.out', '.cas.gz', '.dat.gz',
+              '.plt']
+
 
 # Start of script
 cwd = os.getcwd()
@@ -46,15 +47,19 @@ undef_finisher = futils.check_undef(cur_mtimes, prev_mtimes)
 
 # Check which simulations have converged, diverged or are undefined
 for fname in fnames_fout:
-    if futils.check_convergence(fname):
-        print('{} has converged!'.format(fname))
-        futils.move_files(fname, st_ext_move, conv_dir)
-    elif futils.check_divergence(fname):
-        print('{} has diverged!'.format(fname))
-        futils.move_files(fname, st_ext_move, div_dir)
-    elif undef_finisher[fname]:
-        print('{} has finished undefined'.format(fname))
-        futils.move_files(fname, st_ext_move, undef_dir)
+    state = futils.check_convergence(fname)
+    if state == 'converged':
+        # print('{} has converged!'.format(fname))
+        futils.move_files_checked(fname, st_ext_res, conv_dir)
+    elif state == 'diverged':
+        # print('{} has diverged!'.format(fname))
+        futils.move_files(fname, './', div_dir)
+    elif state == 'outOfIterations':
+        # print('{} has finished ran out of iterations'.format(fname))
+        futils.move_files_checked(fname, st_ext_res, undef_dir)
+    elif state == 'running' and undef_finisher[fname]:
+        # print('{} has finished undefined'.format(fname))
+        futils.move_files(fname, './', undef_dir)
 
 # Get all pbs queue shell scripts
 jobs = futils.get_fnames_by_ext(fnames_mon_dir, '.qsh')
