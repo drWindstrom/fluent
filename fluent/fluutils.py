@@ -5,6 +5,7 @@ import os
 import pandas as pd
 import pickle
 import re
+from math import sqrt
 
 
 def get_fnames_by_ext(fnames, ext):
@@ -348,10 +349,17 @@ def get_clcdcm(top_dir):
     return polars_df
 
 
-def write_journals(airfoils, jou_template, nsetup, ntype, out_dir):
+def write_journals(airfoils, jou_template, nsetup, ntype, out_dir,
+                   kappa=1.4, Rs=287.102, T=288.15, nu=1.7984E-5, c=1.0):
     """Loads the template journal, updates the parameters and writes it to
     out_dir."""
     for nairfoil, sim_setup in airfoils.iteritems():
+        # Calculate pressure
+        Ma = sim_setup['mach']
+        Re = sim_setup['reno']
+        V = Ma*sqrt(kappa*Rs*T)
+        rho = Re*nu/(V*c)
+        p = rho*Rs*T
         for aoa in sim_setup['aoas']:
             # Create simulation name
             sim_name = create_sim_name(nairfoil, ntype, nsetup, aoa)
@@ -361,7 +369,7 @@ def write_journals(airfoils, jou_template, nsetup, ntype, out_dir):
             # Start to replace parameters inside the journal
             jtxt = jtxt.replace('AOA', str(aoa))
             jtxt = jtxt.replace('MACH', str(sim_setup['mach']))
-            jtxt = jtxt.replace('CHORD', str(sim_setup['chord']))
+            jtxt = jtxt.replace('PRESSURE', str(p))
             jtxt = jtxt.replace('CASE_FILE', '{}.cas'.format(nairfoil))
             jtxt = jtxt.replace('OUT.CL', '{}.cl'.format(sim_name))
             jtxt = jtxt.replace('OUT.CD', '{}.cd'.format(sim_name))
