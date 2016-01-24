@@ -72,8 +72,8 @@
 /file/set-batch-options no yes yes
 
 ; Start iterating
-/solve/set/number-of-iterations 3000
-/solve/iterate 3000
+/solve/set/number-of-iterations 5000
+/solve/iterate 5000
 
 ; Save results and export
 /file/write-case-data "OUT_RESULTS"
