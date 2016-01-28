@@ -22,11 +22,11 @@
 /define/materials/change-create air air yes ideal-gas no no no no no no
 /define/models/energy? yes yes no
 
-; For kw-sst model uncomment below
-/define/models/viscous/kw-sst? yes
-/define/boundary-conditions/pressure-far-field inlet no (+ pressure) no (+ mach) no (+ temperatur) no (+ xComp) no (+ yComp) no no yes 0.1 10
-/define/boundary-conditions/pressure-outlet outlet no (+ pressure) no (+ temperatur) no yes no no yes 0.1 10 no no
-/solve/monitors/residual/check-convergence? no no no no no no
+; For reTheta model uncomment below
+/define/models/viscous/transition-sst? yes
+/define/boundary-conditions/pressure-far-field inlet no (+ pressure) no (+ mach) no (+ temperatur) no (+ xComp) no (+ yComp) no no yes no 1 0.1 10
+/define/boundary-conditions/pressure-outlet outlet no (+ pressure) no (+ temperatur) no yes no no yes no 1 0.1 10 no no
+/solve/monitors/residual/check-convergence? no no no no no no no no
 
 ; Operating conditions and reference values
 /define/operating-conditions/operating-pressure 0.
@@ -43,6 +43,8 @@
 /solve/set/discretization-scheme/k 1
 /solve/set/discretization-scheme/omega 1
 /solve/set/discretization-scheme/temperature 1
+/solve/set/discretization-scheme/intermit 1
+/solve/set/discretization-scheme/retheta 1
 
 ; Setup solution controls
 /solve/set/p-v-controls 50. 0.3 0.3
@@ -52,6 +54,8 @@
 /solve/set/under-relaxation/omega 0.5
 /solve/set/under-relaxation/turb-viscosity 1.0
 /solve/set/under-relaxation/temperature 1.0
+/solve/set/under-relaxation/intermit 0.8
+/solve/set/under-relaxation/retheta 0.8
 
 ; Define monitors
 /solve/monitors/force/set-lift-monitor cl-1 yes airfoil () yes yes "OUT.CL" yes 2 no (- yComp) (+ xComp)
@@ -65,7 +69,6 @@
 ; Initialize solution
 /solve/initialize/compute-defaults/pressure-far-field inlet
 /solve/initialize/list-defaults
-/solve/initialize/initialize-flow
 ;/solve/initialize/initialize-flow
 /solve/initialize/hyb-initialization
 ;/solve/initialize/fmg-initialization yes
