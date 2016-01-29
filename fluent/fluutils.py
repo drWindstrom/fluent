@@ -308,7 +308,7 @@ def get_clcdcm(top_dir):
 
     This function uses get_polar() to find all files containing simulation
     data for cl, cd and cm. We start at top_dir and also include all
-    subdirectories. The returned polars are organized in pandas DataFrames.
+    subdirectories. The returned polars are organized in a pandas DataFrames.
 
     Args:
         top_dir (str): Path to root directory from where to start scanning
@@ -340,6 +340,7 @@ def get_clcdcm(top_dir):
         new_index = sorted(new_index)
         # Create new DataFrame which includes cl, cd and cm
         polars_df[polar_id] = pd.DataFrame(index=new_index)
+        polars_df[polar_id]['aoa'] = new_index
         if polar_id in cl_polars:
             polars_df[polar_id]['cl'] = cl_polars[polar_id].cl
         if polar_id in cd_polars:
