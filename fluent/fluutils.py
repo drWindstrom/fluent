@@ -231,7 +231,21 @@ def get_coeff(fname):
         return last_entry, data
 
 
-def find_files(top_dir, pattern):
+def walklevel(top_dir, level=None):
+    """Extensions of os.walk() where we can provide a maximum recursion depth
+    by level."""
+    top_dir = top_dir.rstrip(os.path.sep)
+    assert os.path.isdir(top_dir)
+    num_sep = top_dir.count(os.path.sep)
+    for root, dirs, files in os.walk(top_dir):
+        yield root, dirs, files
+        if level is not None:
+            num_sep_this = root.count(os.path.sep)
+            if num_sep + level <= num_sep_this:
+                del dirs[:]
+
+
+def find_files(top_dir, pattern, level=None):
     """Recursively finds all files in top_dir and all subdirectories which
     match pattern.
 
@@ -247,7 +261,7 @@ def find_files(top_dir, pattern):
 
     """
     matches = []
-    for root, dirs, files in os.walk(top_dir):
+    for root, dirs, files in walklevel(top_dir=top_dir, level=level):
         for filename in fnmatch.filter(files, pattern):
             matches.append([filename, os.path.join(root, filename)])
     return matches
