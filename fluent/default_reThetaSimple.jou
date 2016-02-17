@@ -35,36 +35,33 @@
 /report/reference-values/length 1.0
 
 ; Setup of solution methods
-/solve/set/p-v-coupling 24
+/solve/set/p-v-coupling 20
 /solve/set/gradient-scheme no yes
 /solve/set/discretization-scheme/pressure 12
-/solve/set/discretization-scheme/density 1
-/solve/set/discretization-scheme/mom 1
-/solve/set/discretization-scheme/k 1
-/solve/set/discretization-scheme/omega 1
-/solve/set/discretization-scheme/temperature 1
-/solve/set/discretization-scheme/intermit 1
-/solve/set/discretization-scheme/retheta 1
+/solve/set/discretization-scheme/density 0
+/solve/set/discretization-scheme/mom 0
+/solve/set/discretization-scheme/k 0
+/solve/set/discretization-scheme/omega 0
+/solve/set/discretization-scheme/temperature 0
+/solve/set/discretization-scheme/intermit 0
+/solve/set/discretization-scheme/retheta 0
 
 ; Setup solution controls
-/solve/set/p-v-controls 50. 0.3 0.3
-/solve/set/under-relaxation/density 0.5
-/solve/set/under-relaxation/body-force 1.0
+/solve/set/under-relaxation/pressure 0.2
+/solve/set/under-relaxation/density 0.8
+/solve/set/under-relaxation/body-force 0.8
+/solve/set/under-relaxation/mom 0.5
 /solve/set/under-relaxation/k 0.5
 /solve/set/under-relaxation/omega 0.5
-/solve/set/under-relaxation/turb-viscosity 1.0
+/solve/set/under-relaxation/turb-viscosity 0.8
 /solve/set/under-relaxation/temperature 1.0
-/solve/set/under-relaxation/intermit 0.8
-/solve/set/under-relaxation/retheta 0.8
+/solve/set/under-relaxation/intermit 0.5
+/solve/set/under-relaxation/retheta 0.5
 
 ; Define monitors
 /solve/monitors/force/set-lift-monitor cl-1 yes airfoil () yes yes "OUT.CL" yes 2 no (- yComp) (+ xComp)
 /solve/monitors/force/set-drag-monitor cd-1 yes airfoil () yes yes "OUT.CD" yes 3 no (+ xComp) (+ yComp)
 /solve/monitors/force/set-moment-monitor cm-1 yes airfoil () yes yes "OUT.CM" yes 4 no 0.25 0 0 0 1
-
-; Convergence monitors
-/solve/monitors/convergence/add-edit cd-1 (+ cl_tol) 500 (+ conv_last_iters) yes no
-/solve/monitors/convergence/add-edit cl-1 (+ cd_tol) 500 (+ conv_last_iters) yes no
 
 ; Initialize solution
 ; CAUTION: For standard initialization just uncomment /solve/initialize/initialize-flow.
@@ -80,8 +77,38 @@
 /file/set-batch-options no yes yes
 
 ; Start iterating
-/solve/set/number-of-iterations 4000
-/solve/iterate 4000
+/solve/set/number-of-iterations 1500
+/solve/iterate 1500
+
+; Setup of solution methods
+/solve/set/discretization-scheme/pressure 12
+/solve/set/discretization-scheme/density 1
+/solve/set/discretization-scheme/mom 1
+/solve/set/discretization-scheme/k 0
+/solve/set/discretization-scheme/omega 0
+/solve/set/discretization-scheme/temperature 1
+/solve/set/discretization-scheme/intermit 0
+/solve/set/discretization-scheme/retheta 0
+
+; Setup solution controls
+/solve/set/under-relaxation/pressure 0.3
+/solve/set/under-relaxation/density 1.0
+/solve/set/under-relaxation/body-force 1.0
+/solve/set/under-relaxation/mom 0.7
+/solve/set/under-relaxation/k 0.8
+/solve/set/under-relaxation/omega 0.8
+/solve/set/under-relaxation/turb-viscosity 1.0
+/solve/set/under-relaxation/temperature 1.0
+/solve/set/under-relaxation/intermit 0.8
+/solve/set/under-relaxation/retheta 0.8
+
+; Convergence monitors
+/solve/monitors/convergence/add-edit cd-1 (+ cl_tol) 4000 (+ conv_last_iters) yes no
+/solve/monitors/convergence/add-edit cl-1 (+ cd_tol) 4000 (+ conv_last_iters) yes no
+
+; Start iterating
+/solve/set/number-of-iterations 6000
+/solve/iterate 6000
 
 ; Save results and export
 /file/write-case-data "OUT_RESULTS"

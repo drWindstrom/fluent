@@ -5,7 +5,13 @@
 (define pressure PRESSURE)
 (define cl_tol 0.001)
 (define cd_tol 0.001)
-(define conv_last_iters 50)
+(define conv_last_iters 400)
+(define t1step T1STEP)
+(define n1steps 1000)
+(define m1steps 10)
+(define t2step T2STEP)
+(define n2steps 10000)
+(define m2steps 10)
 /file/read-case "grids/CASE_FILE"
 
 ; Define constants
@@ -18,15 +24,18 @@
 ; Optimize grid for computation
 /mesh/reorder/reorder-domain
 
+; Set transient solver
+/define/models/unsteady-2nd-order-bounded yes
+
 ; Set fluid properties
 /define/materials/change-create air air yes ideal-gas no no no no no no
 /define/models/energy? yes yes no
 
-; For reTheta model uncomment below
-/define/models/viscous/transition-sst? yes
-/define/boundary-conditions/pressure-far-field inlet no (+ pressure) no (+ mach) no (+ temperatur) no (+ xComp) no (+ yComp) no no yes no 1 0.1 10
-/define/boundary-conditions/pressure-outlet outlet no (+ pressure) no (+ temperatur) no yes no no yes no 1 0.1 10 no no
-/solve/monitors/residual/check-convergence? no no no no no no no no
+; For kw-sst model uncomment below
+/define/models/viscous/kw-sst? yes
+/define/boundary-conditions/pressure-far-field inlet no (+ pressure) no (+ mach) no (+ temperatur) no (+ xComp) no (+ yComp) no no yes 0.1 10
+/define/boundary-conditions/pressure-outlet outlet no (+ pressure) no (+ temperatur) no yes no no yes 0.1 10 no no yes
+/solve/monitors/residual/check-convergence? no no no no no no
 
 ; Operating conditions and reference values
 /define/operating-conditions/operating-pressure 0.
@@ -35,7 +44,7 @@
 /report/reference-values/length 1.0
 
 ; Setup of solution methods
-/solve/set/p-v-coupling 24
+/solve/set/p-v-coupling 22
 /solve/set/gradient-scheme no yes
 /solve/set/discretization-scheme/pressure 12
 /solve/set/discretization-scheme/density 1
@@ -43,28 +52,21 @@
 /solve/set/discretization-scheme/k 1
 /solve/set/discretization-scheme/omega 1
 /solve/set/discretization-scheme/temperature 1
-/solve/set/discretization-scheme/intermit 1
-/solve/set/discretization-scheme/retheta 1
 
 ; Setup solution controls
-/solve/set/p-v-controls 50. 0.3 0.3
-/solve/set/under-relaxation/density 0.5
+/solve/set/under-relaxation/pressure 0.3
+/solve/set/under-relaxation/density 1.0
 /solve/set/under-relaxation/body-force 1.0
-/solve/set/under-relaxation/k 0.5
-/solve/set/under-relaxation/omega 0.5
+/solve/set/under-relaxation/mom 0.7
+/solve/set/under-relaxation/k 0.8
+/solve/set/under-relaxation/omega 0.8
 /solve/set/under-relaxation/turb-viscosity 1.0
 /solve/set/under-relaxation/temperature 1.0
-/solve/set/under-relaxation/intermit 0.8
-/solve/set/under-relaxation/retheta 0.8
 
 ; Define monitors
 /solve/monitors/force/set-lift-monitor cl-1 yes airfoil () yes yes "OUT.CL" yes 2 no (- yComp) (+ xComp)
 /solve/monitors/force/set-drag-monitor cd-1 yes airfoil () yes yes "OUT.CD" yes 3 no (+ xComp) (+ yComp)
 /solve/monitors/force/set-moment-monitor cm-1 yes airfoil () yes yes "OUT.CM" yes 4 no 0.25 0 0 0 1
-
-; Convergence monitors
-/solve/monitors/convergence/add-edit cd-1 (+ cl_tol) 500 (+ conv_last_iters) yes no
-/solve/monitors/convergence/add-edit cl-1 (+ cd_tol) 500 (+ conv_last_iters) yes no
 
 ; Initialize solution
 ; CAUTION: For standard initialization just uncomment /solve/initialize/initialize-flow.
@@ -79,10 +81,27 @@
 ; Set batch options
 /file/set-batch-options no yes yes
 
-; Start iterating
-/solve/set/number-of-iterations 4000
-/solve/iterate 4000
+; Convergence monitors
+;/solve/monitors/convergence/add-edit cd-1 (+ cl_tol) 0 (+ conv_last_iters) yes no
+;/solve/monitors/convergence/add-edit cl-1 (+ cd_tol) 0 (+ conv_last_iters) yes no
+
+; Autosave during transient calculations
+/file/auto-save/root-name "AUTO_ROOT"
+/file/auto-save/retain-most-recent-files yes 
+/file/auto-save/max-files 1 
+/file/auto-save/data-frequency 1000
+
+; Start iterating first stage
+/solve/set/time-step (+ t1step)
+/solve/set/number-of-time-steps (+ n1steps) 
+/solve/set/max-iterations-per-time-step (+ m1steps)
+/solve/dual-time-iterate (+ n1steps) (+ m1steps)
+
+; Start iterating second stage
+/solve/set/time-step (+ t2step)
+/solve/set/number-of-time-steps (+ n2steps) 
+/solve/set/max-iterations-per-time-step (+ m2steps)
+/solve/dual-time-iterate (+ n2steps) (+ m2steps)
 
 ; Save results and export
 /file/write-case-data "OUT_RESULTS"
-/file/export/tecplot "OUT_TECPLOT" airfoil () y-plus pressure-coefficient skin-friction-coef quit

@@ -11,12 +11,12 @@ aoas = [-8.0, -6.0, -4.0, -2.0, 0.0, 2.0, 4.0, 6.0, 8.0,
 
 airfs_def = {}
 airfs_def['e44r02000'] = {'mach': 0.0387, 'reno': 2.20E+06, 'aoas': aoas}
-airfs_def['e44r02800'] = {'mach': 0.0439, 'reno': 2.45E+06, 'aoas': aoas}
-airfs_def['e44r04200'] = {'mach': 0.0551, 'reno': 2.94E+06, 'aoas': aoas}
+# airfs_def['e44r02800'] = {'mach': 0.0439, 'reno': 2.45E+06, 'aoas': aoas}
+# airfs_def['e44r04200'] = {'mach': 0.0551, 'reno': 2.94E+06, 'aoas': aoas}
 airfs_def['e44r05500'] = {'mach': 0.0667, 'reno': 3.41E+06, 'aoas': aoas}
-airfs_def['e44r07100'] = {'mach': 0.0815, 'reno': 3.90E+06, 'aoas': aoas}
-airfs_def['e44r08400'] = {'mach': 0.0949, 'reno': 4.27E+06, 'aoas': aoas}
-airfs_def['e44r09900'] = {'mach': 0.1100, 'reno': 4.56E+06, 'aoas': aoas}
+# airfs_def['e44r07100'] = {'mach': 0.0815, 'reno': 3.90E+06, 'aoas': aoas}
+# airfs_def['e44r08400'] = {'mach': 0.0949, 'reno': 4.27E+06, 'aoas': aoas}
+# airfs_def['e44r09900'] = {'mach': 0.1100, 'reno': 4.56E+06, 'aoas': aoas}
 # airfs_def['e44r11200'] = {'mach': 0.1232, 'reno': 4.72E+06, 'aoas': aoas}
 # airfs_def['e44r12700'] = {'mach': 0.1386, 'reno': 4.78E+06, 'aoas': aoas}
 # airfs_def['e44r14100'] = {'mach': 0.1531, 'reno': 4.74E+06, 'aoas': aoas}
@@ -36,6 +36,14 @@ airfs_def['e44r09900'] = {'mach': 0.1100, 'reno': 4.56E+06, 'aoas': aoas}
 # futils.write_journals(airfs_def, 'default_reTheta.jou', 'reTheta', 'st', 'output/reTheta/jou')
 # futils.write_shell_scripts(airfs_def, 'job.sh', 'reTheta', 'st', 'output/reTheta/qsh')
 
+# # SST turbulence model with SIMPLE segregated solver
+# futils.write_journals(airfs_def, 'default_sstSimple.jou', 'sstSimple', 'st', 'output/sstSimple/jou')
+# futils.write_shell_scripts(airfs_def, 'job.sh', 'sstSimple', 'st', 'output/sstSimple/qsh')
+
+# # ReTheta transition model with SIMPLE segregated solver
+# futils.write_journals(airfs_def, 'default_reThetaSimple.jou', 'reThetaSimple', 'st', 'output/reThetaSimple/jou')
+# futils.write_shell_scripts(airfs_def, 'job.sh', 'reThetaSimple', 'st', 'output/reThetaSimple/qsh')
+
 # SST turbulence model with SIMPLE segregated solver
-futils.write_journals(airfs_def, 'default_sstSimple.jou', 'sstSimple', 'st', 'output/sstSimple/jou')
-futils.write_shell_scripts(airfs_def, 'job.sh', 'sstSimple', 'st', 'output/sstSimple/qsh')
+futils.write_journals(airfs_def, 'default_sstPiso.jou', 'sstPiso', 'tr', 'output/sstPiso/jou')
+futils.write_shell_scripts(airfs_def, 'job_tr.sh', 'sstPiso', 'tr', 'output/sstPiso/qsh')

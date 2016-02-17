@@ -5,6 +5,7 @@ import os
 import pandas as pd
 import pickle
 import re
+import sys
 from math import sqrt
 
 
@@ -219,18 +220,6 @@ def create_sim_name(nairfoil, ntype, nsetup, aoa, optional=None):
     return sim_name
 
 
-def get_coeff(fname):
-        """Loads the convergence history of the (cd, cl, cm depending on fname)
-        coefficient from fname and return the convergence history and last
-        entry from convergence history.
-
-        """
-        data = np.loadtxt(fname, skiprows=2, usecols=(1,))
-        # Last entry in numpy array is the correct value
-        last_entry = data[-1]
-        return last_entry, data
-
-
 def walklevel(top_dir, level=None):
     """Extensions of os.walk() where we can provide a maximum recursion depth
     by level."""
@@ -257,14 +246,122 @@ def find_files(top_dir, pattern, level=None):
     [!seq]  matches any character not in seq
 
     Returns:
-        list(list): [[filename, full path to filename]]
+        tuple(list): ([filenames], [full path to files])
 
     """
-    matches = []
+    fnames = []
+    fpaths = []
     for root, dirs, files in walklevel(top_dir=top_dir, level=level):
         for filename in fnmatch.filter(files, pattern):
-            matches.append([filename, os.path.join(root, filename)])
-    return matches
+            fnames.append(filename)
+            fpaths.append(os.path.join(root, filename))
+    return fnames, fpaths
+
+
+def get_st_coeff(fname, skiprows=2, usecols=(1,)):
+        """Loads the convergence history of the (cd, cl, cm depending on fname)
+        coefficient from fname and return the convergence history and last
+        entry from convergence history.
+
+        """
+        hist = np.loadtxt(fname, skiprows=skiprows, usecols=usecols)
+        # Last entry in numpy array is the correct value
+        last_entry = hist[-1]
+        return last_entry, hist
+
+
+def peak_det(v, delta, x=None):
+    """Detects peaks in a vector.
+
+    Finds the local maxima and minima ("peaks") in the vector v. A point is
+    considered a maximum peak if it has the maximal value, and was preceded
+    (to the left) by a value lower by delta. If the optional argument x is
+    given, the indices in maxtab and mintab are replaced with the
+    corresponding x-values.
+
+    Args:
+    v (List): Vector of the signal
+    delta (float): Minimum delta between peaks and valley to be considered
+        maxima or minima
+    x (Optional[List]): Corresponding x values to the vector v
+
+    Returns:
+        tuple: (maxtab, mintab) maxtab and mintab consist of two columns.
+        Column 1 contains indices of v, and column 2 the found values.
+
+    Notes:
+        Eli Billauer, 3.4.05 (Explicitly not copyrighted).
+        This function is released to the public domain; Any use is allowed.
+
+    """
+    maxtab = []
+    mintab = []
+
+    if x is None:
+        x = np.arange(len(v))
+
+    v = np.asarray(v)
+
+    if len(v) != len(x):
+        sys.exit('Input vectors v and x must have same length')
+
+    if not np.isscalar(delta):
+        sys.exit('Input argument delta must be a scalar')
+
+    if delta <= 0:
+        sys.exit('Input argument delta must be positive')
+
+    mn, mx = np.Inf, -np.Inf
+    mnpos, mxpos = np.NaN, np.NaN
+
+    lookformax = True
+
+    for i in np.arange(len(v)):
+        this = v[i]
+        if this > mx:
+            mx = this
+            mxpos = x[i]
+        if this < mn:
+            mn = this
+            mnpos = x[i]
+
+        if lookformax:
+            if this < mx - delta:
+                maxtab.append((mxpos, mx))
+                mn = this
+                mnpos = x[i]
+                lookformax = False
+        else:
+            if this > mn + delta:
+                mintab.append((mnpos, mn))
+                mx = this
+                mxpos = x[i]
+                lookformax = True
+
+    return np.array(maxtab), np.array(mintab)
+
+
+def get_tr_coeff(fname, skiprows=2, usecols=(1,), delta=1.0e-04, frac=5):
+        """Loads the convergence history of the (cd, cl, cm depending on fname)
+        coefficient from fname and return the convergence history and last
+        entry from convergence history.
+
+        """
+        hist = np.loadtxt(fname, skiprows=skiprows, usecols=usecols)
+        num_last = hist.size/frac
+        hist_last = hist[-num_last:]
+        maxtab, mintab = peak_det(v=hist_last, delta=delta)
+        if maxtab.size == 0 or mintab.size == 0:
+            # Return if no peaks or valleys are found
+            return hist[-1], 0.0, hist
+        else:
+            # Get last peak and valley, calc amplitude and return mean, amp and
+            # history
+            coeff_max = maxtab[-1, 1]
+            coeff_min = mintab[-1, 1]
+            amp = (coeff_max - coeff_min)/2.0
+            coeff = coeff_min + amp
+            return coeff, amp, hist
 
 
 def get_polar(top_dir, npolar='cl', pattern='*.cl'):
@@ -295,25 +392,33 @@ def get_polar(top_dir, npolar='cl', pattern='*.cl'):
 
     """
     # Recursively find all files that match pattern
-    matched_files = find_files(top_dir, pattern)
+    fnames, fpaths = find_files(top_dir, pattern)
     # Loop over all matched files and extract the aoa and the coefficient
     polars = {}
-    for cur_file in matched_files:
-        fname_parts, aoa = split_fname(cur_file[0])
-        coeff_val, coeff_hist = get_coeff(cur_file[1])
+    for fname, fpath in zip(fnames, fpaths):
+        fname_parts, aoa = split_fname(fname)
         polar_id = '{}_{}'.format(fname_parts['nairfoil'],
                                   fname_parts['nsetup'])
         if polar_id not in polars:
             polars[polar_id] = []
-        polars[polar_id].append([aoa, coeff_val])
+        if fname_parts['ntype'].lower() == 'st':
+            coeff_val, coeff_hist = get_st_coeff(fpath)
+            # Since this is a steady simulation our coeff_val shoult be steady
+            # without oscillations. Therefore we set the amplitutde to 0.0
+            polars[polar_id].append([aoa, coeff_val, 0.0])
+        elif fname_parts['ntype'].lower() == 'tr':
+            coeff_val, amp, coeff_hist = get_tr_coeff(
+                fname=fpath, skiprows=2, usecols=(1,), delta=1.0e-04, frac=5)
+            polars[polar_id].append([aoa, coeff_val, amp])
     # Convert data to pandas Dataframe
     polars_df = {}
-    for key, value in polars.iteritems():
-        polars_df[key] = pd.DataFrame(data=value, columns=['aoa', npolar])
+    for polar_id, polar_data in polars.iteritems():
+        polars_df[polar_id] = pd.DataFrame(
+            data=polar_data, columns=['aoa', npolar, npolar + '_amp'])
         # Order by aoa
-        polars_df[key].sort_values('aoa', inplace=True, ascending=True)
+        polars_df[polar_id].sort_values('aoa', inplace=True, ascending=True)
         # Set ordered column of aoa as index
-        polars_df[key].index = polars_df[key].aoa
+        polars_df[polar_id].index = polars_df[polar_id].aoa
     return polars_df
 
 
@@ -357,10 +462,13 @@ def get_clcdcm(top_dir):
         polars_df[polar_id]['aoa'] = new_index
         if polar_id in cl_polars:
             polars_df[polar_id]['cl'] = cl_polars[polar_id].cl
+            polars_df[polar_id]['cl_amp'] = cl_polars[polar_id].cl_amp
         if polar_id in cd_polars:
             polars_df[polar_id]['cd'] = cd_polars[polar_id].cd
+            polars_df[polar_id]['cd_amp'] = cd_polars[polar_id].cd_amp
         if polar_id in cm_polars:
             polars_df[polar_id]['cm'] = cm_polars[polar_id].cm
+            polars_df[polar_id]['cm_amp'] = cm_polars[polar_id].cm_amp
     return polars_df
 
 
@@ -375,6 +483,9 @@ def write_journals(airfoils, jou_template, nsetup, ntype, out_dir,
         V = Ma*sqrt(kappa*Rs*T)
         rho = Re*nu/(V*c)
         p = rho*Rs*T
+        t1step = 1.0/(V*10)
+        t2step = 1.0/(V*1000)
+
         for aoa in sim_setup['aoas']:
             # Create simulation name
             sim_name = create_sim_name(nairfoil, ntype, nsetup, aoa)
@@ -385,12 +496,15 @@ def write_journals(airfoils, jou_template, nsetup, ntype, out_dir,
             jtxt = jtxt.replace('AOA', str(aoa))
             jtxt = jtxt.replace('MACH', str(sim_setup['mach']))
             jtxt = jtxt.replace('PRESSURE', str(p))
+            jtxt = jtxt.replace('T1STEP', str(t1step))
+            jtxt = jtxt.replace('T2STEP', str(t2step))
             jtxt = jtxt.replace('CASE_FILE', '{}.cas'.format(nairfoil))
             jtxt = jtxt.replace('OUT.CL', '{}.cl'.format(sim_name))
             jtxt = jtxt.replace('OUT.CD', '{}.cd'.format(sim_name))
             jtxt = jtxt.replace('OUT.CM', '{}.cm'.format(sim_name))
             jtxt = jtxt.replace('OUT_TECPLOT', '{}.plt'.format(sim_name))
             jtxt = jtxt.replace('OUT_RESULTS', '{}.cas.gz'.format(sim_name))
+            jtxt = jtxt.replace('AUTO_ROOT', '{}'.format(sim_name))
             # Write new journal to out_dir
             jname = sim_name + '.jou'
             if not os.path.exists(out_dir):
@@ -423,36 +537,38 @@ def write_shell_scripts(airfoils, qsh_template, nsetup, ntype, out_dir):
     return True
 
 
-def restart_scan(top_dir, ext='*.jou'):
-    """Recursively scans top_dir and subdirectories for fluent journals and
-    returns the parameters needed to restart these simulations."""
-    # Find all files
-    jou_files = find_files(top_dir, ext)
-    # Define regular expressions
-    mach_pattern = re.compile(r'\(define *mach *([\+\-]*\d*\.\d*)\)')
-    chord_pattern = re.compile(r'\(define *chord *([\+\-]*\d*\.\d*)\)')
-    airfoils = {}
-    for jou_file, fout_path in jou_files:
-        fname_parts, aoa = split_fname(jou_file)
-        nairfoil = fname_parts['nairfoil']
-        # Prepare data structure for airfoils
-        if nairfoil not in airfoils:
-            airfoils[nairfoil] = {}
-        if 'aoas' not in airfoils[nairfoil]:
-            airfoils[nairfoil]['aoas'] = []
-        # Start adding data to airfoils
-        airfoils[nairfoil]['aoas'].append(aoa)
-        with open(fout_path, 'r') as f:
-            txt = f.read()
-        # Find matches and convert to float
-        mach_matches = re.findall(mach_pattern, txt)
-        chord_matches = re.findall(chord_pattern, txt)
-        if len(mach_matches) > 1 or len(chord_matches) > 1:
-            raise IndexError('Found more than one match. This should not '
-                             'happen. Make sure each variable is only '
-                             'defined once in the journal.')
-        mach = float(mach_matches[0])
-        chord = float(chord_matches[0])
-        airfoils[nairfoil]['mach'] = mach
-        airfoils[nairfoil]['chord'] = chord
-    return airfoils
+
+
+# def restart_scan(top_dir, ext='*.jou'):
+#     """Recursively scans top_dir and subdirectories for fluent journals and
+#     returns the parameters needed to restart these simulations."""
+#     # Find all files
+#     jou_files, jou_paths = find_files(top_dir, ext)
+#     # Define regular expressions
+#     mach_pattern = re.compile(r'\(define *mach *([\+\-]*\d*\.\d*)\)')
+#     chord_pattern = re.compile(r'\(define *chord *([\+\-]*\d*\.\d*)\)')
+#     airfoils = {}
+#     for jou_file, fout_path in zip(jou_files, jou_paths):
+#         fname_parts, aoa = split_fname(jou_file)
+#         nairfoil = fname_parts['nairfoil']
+#         # Prepare data structure for airfoils
+#         if nairfoil not in airfoils:
+#             airfoils[nairfoil] = {}
+#         if 'aoas' not in airfoils[nairfoil]:
+#             airfoils[nairfoil]['aoas'] = []
+#         # Start adding data to airfoils
+#         airfoils[nairfoil]['aoas'].append(aoa)
+#         with open(fout_path, 'r') as f:
+#             txt = f.read()
+#         # Find matches and convert to float
+#         mach_matches = re.findall(mach_pattern, txt)
+#         chord_matches = re.findall(chord_pattern, txt)
+#         if len(mach_matches) > 1 or len(chord_matches) > 1:
+#             raise IndexError('Found more than one match. This should not '
+#                              'happen. Make sure each variable is only '
+#                              'defined once in the journal.')
+#         mach = float(mach_matches[0])
+#         chord = float(chord_matches[0])
+#         airfoils[nairfoil]['mach'] = mach
+#         airfoils[nairfoil]['chord'] = chord
+#     return airfoils

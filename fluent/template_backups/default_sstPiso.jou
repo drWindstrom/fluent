@@ -1,0 +1,122 @@
+; Input simulation parameters
+(define aoa AOA)
+(define mach MACH)
+(define temperatur 288.15)
+(define pressure PRESSURE)
+(define cl_tol 0.001)
+(define cd_tol 0.001)
+(define conv_last_iters 400)
+(define tstep TSTEP)
+(define nsteps NSTEPS)
+(define msteps 10)
+/file/read-case "grids/CASE_FILE"
+
+; Define constants
+(define pi 3.14159265359)
+
+; Get xComponent and yComponent based on angle of attack
+(define xComp (cos (* aoa (/ pi 180.0) ) ) )
+(define yComp (sin (* aoa (/ pi 180.0) ) ) )
+
+; Optimize grid for computation
+/mesh/reorder/reorder-domain
+
+; Set fluid properties
+/define/materials/change-create air air yes ideal-gas no no no no no no
+/define/models/energy? yes yes no
+
+; For kw-sst model uncomment below
+/define/models/viscous/kw-sst? yes
+/define/boundary-conditions/pressure-far-field inlet no (+ pressure) no (+ mach) no (+ temperatur) no (+ xComp) no (+ yComp) no no yes 0.1 10
+/define/boundary-conditions/pressure-outlet outlet no (+ pressure) no (+ temperatur) no yes no no yes 0.1 10 no no
+/solve/monitors/residual/check-convergence? no no no no no no
+
+; Operating conditions and reference values
+/define/operating-conditions/operating-pressure 0.
+/report/reference-values/compute/pressure-far-field inlet
+/report/reference-values/area 1.0
+/report/reference-values/length 1.0
+
+; Setup of solution methods
+/solve/set/p-v-coupling 20
+/solve/set/gradient-scheme no yes
+/solve/set/discretization-scheme/pressure 12
+/solve/set/discretization-scheme/density 0
+/solve/set/discretization-scheme/mom 0
+/solve/set/discretization-scheme/k 0
+/solve/set/discretization-scheme/omega 0
+/solve/set/discretization-scheme/temperature 0
+
+; Setup solution controls
+/solve/set/under-relaxation/pressure 0.2
+/solve/set/under-relaxation/density 0.8
+/solve/set/under-relaxation/body-force 0.8
+/solve/set/under-relaxation/mom 0.5
+/solve/set/under-relaxation/k 0.5
+/solve/set/under-relaxation/omega 0.5
+/solve/set/under-relaxation/turb-viscosity 0.8
+/solve/set/under-relaxation/temperature 1.0
+
+; Define monitors
+/solve/monitors/force/set-lift-monitor cl-1 yes airfoil () yes yes "OUT.CL" yes 2 no (- yComp) (+ xComp)
+/solve/monitors/force/set-drag-monitor cd-1 yes airfoil () yes yes "OUT.CD" yes 3 no (+ xComp) (+ yComp)
+/solve/monitors/force/set-moment-monitor cm-1 yes airfoil () yes yes "OUT.CM" yes 4 no 0.25 0 0 0 1
+
+; Initialize solution
+; CAUTION: For standard initialization just uncomment /solve/initialize/initialize-flow.
+;          For hybrid initialization just uncoment /solve/initialize/hyb-initialization.
+;          For full multigrid initialization uncomment /solve/initialize/initialize-flow and /solve/initialize/fmg-initialization yes.
+/solve/initialize/compute-defaults/pressure-far-field inlet
+/solve/initialize/list-defaults
+/solve/initialize/hyb-initialization
+;/solve/initialize/initialize-flow
+;/solve/initialize/fmg-initialization yes
+
+; Set batch options
+/file/set-batch-options no yes yes
+
+; Start iterating
+/solve/set/number-of-iterations 500
+/solve/iterate 500
+
+; Set transient solver
+/define/models/unsteady-2nd-order-bounded yes
+
+; Setup of solution methods
+/solve/set/p-v-coupling 22
+/solve/set/gradient-scheme no yes
+/solve/set/discretization-scheme/pressure 12
+/solve/set/discretization-scheme/density 1
+/solve/set/discretization-scheme/mom 1
+/solve/set/discretization-scheme/k 1
+/solve/set/discretization-scheme/omega 1
+/solve/set/discretization-scheme/temperature 1
+
+; Setup solution controls
+/solve/set/under-relaxation/pressure 0.3
+/solve/set/under-relaxation/density 1.0
+/solve/set/under-relaxation/body-force 1.0
+/solve/set/under-relaxation/mom 0.7
+/solve/set/under-relaxation/k 0.8
+/solve/set/under-relaxation/omega 0.8
+/solve/set/under-relaxation/turb-viscosity 1.0
+/solve/set/under-relaxation/temperature 1.0
+
+; Convergence monitors
+/solve/monitors/convergence/add-edit cd-1 (+ cl_tol) 0 (+ conv_last_iters) yes no
+/solve/monitors/convergence/add-edit cl-1 (+ cd_tol) 0 (+ conv_last_iters) yes no
+
+; Autosave during transient calculations
+/file/auto-save/root-name "AUTO_ROOT"
+/file/auto-save/retain-most-recent-files yes 
+/file/auto-save/max-files 1 
+/file/auto-save/data-frequency 1000
+
+; Start iterating
+/solve/set/time-step (+ tstep)
+/solve/set/number-of-time-steps (+ nsteps) 
+/solve/set/max-iterations-per-time-step (+ msteps)
+/solve/dual-time-iterate (+ nsteps) (+ msteps)
+
+; Save results and export
+/file/write-case-data "OUT_RESULTS"
