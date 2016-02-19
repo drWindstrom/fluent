@@ -484,7 +484,7 @@ def write_journals(airfoils, jou_template, nsetup, ntype, out_dir,
         rho = Re*nu/(V*c)
         p = rho*Rs*T
         t1step = 1.0/(V*10)
-        t2step = 1.0/(V*1000)
+        t2step = 1.0/(V*100)
 
         for aoa in sim_setup['aoas']:
             # Create simulation name
